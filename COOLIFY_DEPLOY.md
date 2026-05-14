@@ -48,9 +48,16 @@ Asegúrate de que tu repositorio contenga:
    **Build Context:**
    - Deja vacío o usa `/` (raíz del repositorio)
    
-   **Port Mapping:**
+   **Ports Exposes:**
+   - Port: `5000`
+   
+   **Port Mappings:**
    - Container Port: `5000`
-   - Host Port: `30000` (o cualquier puerto disponible)
+   - Host Port: `30000` (opcional, solo si necesitas acceso directo por IP:puerto)
+   
+   **Nota:**
+   - **Ports Exposes (5000)**: Expone el puerto interno para que Coolify pueda acceder a través de su proxy inverso (Traefik). Esto es necesario para que funcione el dominio con SSL.
+   - **Port Mappings (5000:30000)**: Mapea el puerto del contenedor al host. Solo es necesario si quieres acceder directamente por `IP:30000`. Si solo usarás el dominio, no es necesario configurarlo.
    
    **Environment Variables:**
    ```

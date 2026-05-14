@@ -51,8 +51,18 @@ def download():
         "retries": 10,
         "no_check_certificates": True,
         "legacyserverconnect": True,
-        # Descomenta y apunta a tu archivo de cookies si necesitas descargar de cuentas privadas:
-        # "cookiefile": "cookies.txt",
+        # Add user agent to avoid bot detection
+        "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        # Add additional options to bypass YouTube restrictions
+        "extractor_args": {
+            "youtube": {
+                "player_client": ["android", "web"],
+            }
+        },
+        "extract_flat": False,
+        "fragment_retries": 10,
+        # Optional: Use cookies if available
+        # "cookiefile": "/app/cookies.txt",
     }
 
     try:
