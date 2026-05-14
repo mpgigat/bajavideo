@@ -1,5 +1,9 @@
 # Python
 __pycache__/
+
+# Security - Never commit cookies
+cookies.txt
+cookies.txt.bak
 *.py[cod]
 *$py.class
 *.so
@@ -44,3 +48,4 @@ Thumbs.db
 # Environment
 .env
 .env.local
+cookies.txt

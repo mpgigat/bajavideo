@@ -43,8 +43,18 @@ def download():
     import uuid
     temp_filename = f"temp_{uuid.uuid4().hex}"
     
-    # Check if cookies file exists
+    # Check for cookies from environment variable or file
     cookies_file = "/app/cookies.txt"
+    cookies_env = os.environ.get("YOUTUBE_COOKIES", "")
+    
+    # Create cookies file from environment variable if provided
+    if cookies_env and not os.path.exists(cookies_file):
+        try:
+            with open(cookies_file, "w") as f:
+                f.write(cookies_env)
+            print("Created cookies file from environment variable")
+        except Exception as e:
+            print(f"Error creating cookies file: {e}")
     
     ydl_opts = {
         "outtmpl": os.path.join(TEMP_DIR, temp_filename + ".%(ext)s"),
