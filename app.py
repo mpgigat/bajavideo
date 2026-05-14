@@ -83,15 +83,13 @@ def download():
         logger.info(f"Cookies file size: {cookies_size} bytes")
     
     # Configure format options
-    # Use different format based on whether we have cookies
+    # We always include mobile/tv clients first as they have fewer restrictions than 'web'
+    format_string = "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best"
+    
     if cookies_exist:
-        # With cookies, use web client (supports cookies)
-        format_string = "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best"
-        player_clients = ["web"]
+        player_clients = ["ios", "android", "tv", "web"]
     else:
-        # Without cookies, try android first (less restrictions), then web
-        format_string = "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best"
-        player_clients = ["android", "web"]
+        player_clients = ["ios", "android", "tv", "web"]
     
     ydl_opts = {
         "outtmpl": os.path.join(TEMP_DIR, temp_filename + ".%(ext)s"),
