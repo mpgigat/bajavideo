@@ -1,0 +1,97 @@
+from flask import Flask, request, jsonify, send_from_directory, send_file, after_this_request
+import yt_dlp
+import os
+import tempfile
+
+app = Flask(__name__, static_folder="static")
+
+# Use temporary directory for downloads (files will be cleaned up)
+TEMP_DIR = os.path.join(tempfile.gettempdir(), "instagram_downloader")
+os.makedirs(TEMP_DIR, exist_ok=True)
+
+
+def detect_platform(url):
+    """Detect the platform from the URL."""
+    url_lower = url.lower()
+    if "instagram.com" in url_lower:
+        return "instagram"
+    elif "youtube.com" in url_lower or "youtu.be" in url_lower:
+        return "youtube"
+    else:
+        return None
+
+
+@app.route("/")
+def index():
+    return send_from_directory("static", "index.html")
+
+
+@app.route("/download", methods=["POST"])
+def download():
+    url = request.json.get("url", "").strip()
+    if not url:
+        return jsonify({"error": "URL requerida"}), 400
+
+    # Detect platform for display purposes
+    platform = detect_platform(url)
+    if platform is None:
+        return jsonify({"error": "Plataforma no soportada. Usa Instagram o YouTube."}), 400
+
+    platform_name = "Instagram" if platform == "instagram" else "YouTube"
+
+    # Generate a unique filename for temporary storage
+    import uuid
+    temp_filename = f"temp_{uuid.uuid4().hex}"
+    
+    ydl_opts = {
+        "outtmpl": os.path.join(TEMP_DIR, temp_filename + ".%(ext)s"),
+        "format": "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
+        "merge_output_format": "mp4",
+        "socket_timeout": 60,
+        "retries": 10,
+        "no_check_certificates": True,
+        "legacyserverconnect": True,
+        # Descomenta y apunta a tu archivo de cookies si necesitas descargar de cuentas privadas:
+        # "cookiefile": "cookies.txt",
+    }
+
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(url, download=True)
+            temp_file = ydl.prepare_filename(info)
+            # yt-dlp puede cambiar la extensión al hacer merge
+            if not os.path.exists(temp_file):
+                temp_file = os.path.splitext(temp_file)[0] + ".mp4"
+            
+            # Get the original video title for the download filename
+            video_title = info.get('title', 'video')
+            # Clean the title to make it safe for filenames
+            safe_title = "".join(c for c in video_title if c.isalnum() or c in (' ', '-', '_')).strip()
+            download_filename = f"{safe_title}.mp4"
+            
+            # Register cleanup function to delete the file after sending
+            @after_this_request
+            def remove_file(response):
+                try:
+                    if os.path.exists(temp_file):
+                        os.remove(temp_file)
+                except Exception as e:
+                    print(f"Error deleting temporary file: {e}")
+                return response
+            
+            # Send the file to the client
+            return send_file(
+                temp_file,
+                as_attachment=True,
+                download_name=download_filename,
+                mimetype='video/mp4'
+            )
+    except yt_dlp.utils.DownloadError as e:
+        return jsonify({"error": str(e)}), 500
+
+
+if __name__ == "__main__":
+    # Use 0.0.0.0 to make it accessible from outside the container
+    port = int(os.environ.get("PORT", 5000))
+    debug = os.environ.get("FLASK_DEBUG", "0") == "1"
+    app.run(host="0.0.0.0", debug=debug, port=port)

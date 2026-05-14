@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Descargar Videos</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, sans-serif;
+      background: #0f0f0f;
+      color: #f0f0f0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .card {
+      background: #1a1a1a;
+      border-radius: 12px;
+      padding: 2rem;
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    h1 { font-size: 1.3rem; font-weight: 600; }
+    input {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      border: 1px solid #333;
+      background: #0f0f0f;
+      color: #f0f0f0;
+      font-size: 0.95rem;
+      outline: none;
+    }
+    input:focus { border-color: #e1306c; }
+    button {
+      padding: 0.75rem;
+      border-radius: 8px;
+      border: none;
+      background: #e1306c;
+      color: white;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    button:hover { background: #c13060; }
+    button:disabled { background: #555; cursor: not-allowed; }
+    #status {
+      font-size: 0.9rem;
+      min-height: 1.2rem;
+      color: #aaa;
+    }
+    #status.ok { color: #4caf50; }
+    #status.err { color: #e1306c; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Descargar Videos</h1>
+    <input id="url" type="text" placeholder="Pega el link de Instagram o YouTube..." />
+    <button id="btn" onclick="descargar()">Descargar</button>
+    <div id="status"></div>
+  </div>
+
+  <script>
+    async function descargar() {
+      const url = document.getElementById("url").value.trim();
+      const btn = document.getElementById("btn");
+      const status = document.getElementById("status");
+
+      if (!url) {
+        setStatus("Pegá el link del video.", "err");
+        return;
+      }
+
+      btn.disabled = true;
+      setStatus("Descargando...");
+
+      try {
+        const res = await fetch("/download", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url }),
+        });
+        
+        if (res.ok) {
+          // Get the filename from Content-Disposition header
+          const contentDisposition = res.headers.get('Content-Disposition');
+          let filename = 'video.mp4';
+          if (contentDisposition) {
+            const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+            if (filenameMatch && filenameMatch[1]) {
+              filename = filenameMatch[1].replace(/['"]/g, '');
+            }
+          }
+          
+          // Create blob and download
+          const blob = await res.blob();
+          const downloadUrl = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = downloadUrl;
+          a.download = filename;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          window.URL.revokeObjectURL(downloadUrl);
+          
+          setStatus(`✓ Descarga completada: ${filename}`, "ok");
+        } else {
+          const data = await res.json();
+          setStatus(`Error: ${data.error}`, "err");
+        }
+      } catch {
+        setStatus("No se pudo conectar con el servidor.", "err");
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    function setStatus(msg, type = "") {
+      const el = document.getElementById("status");
+      el.textContent = msg;
+      el.className = type;
+    }
+
+    document.getElementById("url").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") descargar();
+    });
+  </script>
+</body>
+</html>
