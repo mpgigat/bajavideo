@@ -82,9 +82,20 @@ def download():
         cookies_size = os.path.getsize(cookies_file)
         logger.info(f"Cookies file size: {cookies_size} bytes")
     
+    # Configure format options
+    # Use different format based on whether we have cookies
+    if cookies_exist:
+        # With cookies, use web client (supports cookies)
+        format_string = "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best"
+        player_clients = ["web"]
+    else:
+        # Without cookies, try android first (less restrictions), then web
+        format_string = "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best"
+        player_clients = ["android", "web"]
+    
     ydl_opts = {
         "outtmpl": os.path.join(TEMP_DIR, temp_filename + ".%(ext)s"),
-        "format": "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
+        "format": format_string,
         "merge_output_format": "mp4",
         "socket_timeout": 60,
         "retries": 10,
@@ -95,12 +106,14 @@ def download():
         # Add additional options to bypass YouTube restrictions
         "extractor_args": {
             "youtube": {
-                "player_client": ["android", "web"],
+                "player_client": player_clients,
             }
         },
         "extract_flat": False,
         "fragment_retries": 10,
     }
+    
+    logger.info(f"Using player clients: {player_clients}")
     
     # Use cookies if file exists
     if os.path.exists(cookies_file):
