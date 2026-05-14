@@ -2,6 +2,11 @@ from flask import Flask, request, jsonify, send_from_directory, send_file, after
 import yt_dlp
 import os
 import tempfile
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__, static_folder="static")
 
@@ -47,24 +52,24 @@ def download():
     cookies_file = "/app/cookies.txt"
     cookies_env = os.environ.get("YOUTUBE_COOKIES", "")
     
-    print(f"Environment variable YOUTUBE_COOKIES exists: {bool(cookies_env)}")
-    print(f"Environment variable length: {len(cookies_env)}")
+    logger.info(f"Environment variable YOUTUBE_COOKIES exists: {bool(cookies_env)}")
+    logger.info(f"Environment variable length: {len(cookies_env)}")
     
     # Create cookies file from environment variable if provided
     if cookies_env:
         try:
             with open(cookies_file, "w") as f:
                 f.write(cookies_env)
-            print(f"Created cookies file from environment variable, size: {len(cookies_env)} bytes")
+            logger.info(f"Created cookies file from environment variable, size: {len(cookies_env)} bytes")
         except Exception as e:
-            print(f"Error creating cookies file: {e}")
+            logger.error(f"Error creating cookies file: {e}")
     
     # Check if cookies file exists
     cookies_exist = os.path.exists(cookies_file)
-    print(f"Cookies file exists: {cookies_exist}")
+    logger.info(f"Cookies file exists: {cookies_exist}")
     if cookies_exist:
         cookies_size = os.path.getsize(cookies_file)
-        print(f"Cookies file size: {cookies_size} bytes")
+        logger.info(f"Cookies file size: {cookies_size} bytes")
     
     ydl_opts = {
         "outtmpl": os.path.join(TEMP_DIR, temp_filename + ".%(ext)s"),
@@ -89,9 +94,9 @@ def download():
     # Use cookies if file exists
     if os.path.exists(cookies_file):
         ydl_opts["cookiefile"] = cookies_file
-        print("Using cookies file for authentication")
+        logger.info("Using cookies file for authentication")
     else:
-        print("No cookies file found, proceeding without authentication")
+        logger.warning("No cookies file found, proceeding without authentication")
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -113,8 +118,9 @@ def download():
                 try:
                     if os.path.exists(temp_file):
                         os.remove(temp_file)
+                        logger.info(f"Deleted temporary file: {temp_file}")
                 except Exception as e:
-                    print(f"Error deleting temporary file: {e}")
+                    logger.error(f"Error deleting temporary file: {e}")
                 return response
             
             # Send the file to the client
