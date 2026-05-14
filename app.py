@@ -51,12 +51,23 @@ def download():
     # Check for cookies from environment variable or file
     cookies_file = "/app/cookies.txt"
     cookies_env = os.environ.get("YOUTUBE_COOKIES", "")
+    cookies_base64 = os.environ.get("COOKIES_BASE64", "")
     
     logger.info(f"Environment variable YOUTUBE_COOKIES exists: {bool(cookies_env)}")
-    logger.info(f"Environment variable length: {len(cookies_env)}")
+    logger.info(f"Environment variable COOKIES_BASE64 exists: {bool(cookies_base64)}")
     
+    # Create cookies file from base64 if provided
+    if cookies_base64:
+        try:
+            import base64
+            cookies_content = base64.b64decode(cookies_base64).decode('utf-8')
+            with open(cookies_file, "w") as f:
+                f.write(cookies_content)
+            logger.info(f"Created cookies file from base64, size: {len(cookies_content)} bytes")
+        except Exception as e:
+            logger.error(f"Error creating cookies file from base64: {e}")
     # Create cookies file from environment variable if provided
-    if cookies_env:
+    elif cookies_env:
         try:
             with open(cookies_file, "w") as f:
                 f.write(cookies_env)
