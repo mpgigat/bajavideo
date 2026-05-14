@@ -17,6 +17,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY app.py .
 COPY static/ ./static/
 
+# Copy cookies file if exists (optional)
+RUN if [ -f cookies.txt ]; then cp cookies.txt /app/cookies.txt; fi
+
 # Create temp directory for downloads
 RUN mkdir -p /tmp/instagram_downloader
 

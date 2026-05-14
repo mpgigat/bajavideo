@@ -43,6 +43,9 @@ def download():
     import uuid
     temp_filename = f"temp_{uuid.uuid4().hex}"
     
+    # Check if cookies file exists
+    cookies_file = "/app/cookies.txt"
+    
     ydl_opts = {
         "outtmpl": os.path.join(TEMP_DIR, temp_filename + ".%(ext)s"),
         "format": "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
@@ -61,9 +64,14 @@ def download():
         },
         "extract_flat": False,
         "fragment_retries": 10,
-        # Optional: Use cookies if available
-        # "cookiefile": "/app/cookies.txt",
     }
+    
+    # Use cookies if file exists
+    if os.path.exists(cookies_file):
+        ydl_opts["cookiefile"] = cookies_file
+        print("Using cookies file for authentication")
+    else:
+        print("No cookies file found, proceeding without authentication")
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
